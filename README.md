@@ -1,3 +1,3 @@
 # Ponline
 
-![Alt Text](https://github.com/josemorval/Ponline/blob/master/img/tennis2d.gif)
+![Alt Text](https://github.com/josemorval/Ponline/blob/master/img/tennis2d.gif | width=500)
