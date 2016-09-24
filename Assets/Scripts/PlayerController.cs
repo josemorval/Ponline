@@ -1,26 +1,27 @@
 ﻿using UnityEngine;
+using UnityEngine.Networking;
 using System.Collections;
 
-public class PlayerController : MonoBehaviour {
+public class PlayerController : NetworkBehaviour {
 
 	#region public variables
 		[Header("Transform de los jugadores")]
-		public Transform playerone;
-		public Transform playertwo;
+		public Transform player;
+		//public Transform playertwo;
 		
 		[Header("Controles para el jugador uno")]
-		public KeyCode playeroneUp;
-		public KeyCode playeroneDown;
+		public KeyCode playerUp;
+		public KeyCode playerDown;
 		[Space(2)]
 
 		[Header("Controles para el jugador dos")]
-		public KeyCode playertwoUp;
-		public KeyCode playertwoDown;
+		//public KeyCode playertwoUp;
+		//public KeyCode playertwoDown;
 		[Space(2)]
 
 		[Header("Direccion en la que se mueven los jugadores")]
-		public float dirVelOne;
-		public float dirVelTwo;
+		public float dirVel;
+		//public float dirVelTwo;
 
 		[Space(2)]
 
@@ -32,39 +33,54 @@ public class PlayerController : MonoBehaviour {
 		[Header("Anchura (la mitad) lógica del campo")]
 		public float widthField;
 	#endregion
-	
+
+	void Start(){
+		if (transform.position.x < 0) { /*Super dirty*/
+			this.name = "Player1";
+			playerUp = KeyCode.A;
+			playerDown = KeyCode.Z;
+		} else {
+			this.name = "Player2";
+			playerUp = KeyCode.UpArrow;
+			playerDown = KeyCode.DownArrow;
+		}
+
+		player = this.transform;
+	}
+
 	void Update () {
-	
-		MovePlayerOne();
-		MovePlayerTwo();
+
+		if (isLocalPlayer) {
+			MovePlayer ();
+		}
 
 	}
 
-	void MovePlayerOne(){
-		if(Input.GetKey(playeroneUp)){
-			dirVelOne = 1f;
-		}else if(Input.GetKey(playeroneDown)){
-			dirVelOne = -1f;
+	void MovePlayer(){
+		if(Input.GetKey(playerUp)){
+			dirVel = 1f;
+		}else if(Input.GetKey(playerDown)){
+			dirVel = -1f;
 		}else{
-			dirVelOne = 0f;
+			dirVel = 0f;
 		}
 
-		Vector3 v = playerone.position;
-		v = v + maxVel*dirVelOne*transform.up;
-		playerone.position = v;
+		Vector3 v = player.position;
+		v = v + maxVel*dirVel*transform.up;
+		player.position = v;
 
 		if(v.y<-widthField){
 			v.y = -widthField;
-			playerone.position = v; 
-			dirVelOne = 1f;
+			player.position = v; 
+			dirVel = 1f;
 		}if(v.y>widthField){
 			v.y = widthField;
-			playerone.position = v; 
-			dirVelOne = -1f;
+			player.position = v; 
+			dirVel = -1f;
 		}
 	}
 
-	void MovePlayerTwo(){
+	/*void MovePlayerTwo(){
 
 		if(Input.GetKey(playertwoUp)){
 			dirVelTwo = 1f;
@@ -88,5 +104,5 @@ public class PlayerController : MonoBehaviour {
 			dirVelTwo = -1f;
 		}
 		
-	}
+	}*/
 }
