@@ -23,6 +23,9 @@ public class BallController : NetworkBehaviour {
 		public ScoreScript scoreP2;
 		
 		public NetworkManager netMan;
+		[Header("Semilla para la generacion random de numeros")]
+		public int seedRandom;
+		public bool updateSeed;
 
 	#endregion
 
@@ -139,7 +142,10 @@ public class BallController : NetworkBehaviour {
 	}
 
 	public void RestartMatch(){
-
+			if (updateSeed) {
+				Random.seed = seedRandom;
+				updateSeed = false;
+			}
 			currentVel = initialVel;
 			dir = currentVel*new Vector3(1f,0f,0f);
 			vel = dir*1f/(1f+factorVel*currentHeight*currentHeight);
