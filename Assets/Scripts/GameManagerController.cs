@@ -18,6 +18,11 @@ public class GameManagerController : MonoBehaviour {
 		[Header("Parámetros conexión")]
 		public string ipAddress;
 		public int serverPort;
+
+		[Header("Controllers de los objetos")]
+		public BallController ballScript;
+		public PlayerController playerone;
+		public PlayerController playertwo;
 	#endregion
 
 
@@ -25,6 +30,8 @@ public class GameManagerController : MonoBehaviour {
 
 		bool flag; //Para  detectar si ya se esta corriendo como host o cliente
 		GameObject networkManager;
+		GameObject ball;
+
 
 	#endregion
 
@@ -37,15 +44,15 @@ public class GameManagerController : MonoBehaviour {
 	void Update () {
 		//Vemos si debemos instanciar algun network gameobject
 		if (!flag) {
-			if (Input.GetKey (serverKey)) {
-				networkManager = Instantiate (server);
-				networkManager.name = networkManager.name.Replace ("(Clone)", "");
-				flag = true;
-			} else if (Input.GetKey (clientKey)) {
+			if (Input.GetKey (clientKey)) {
 				networkManager = Instantiate (client);
 				networkManager.name = networkManager.name.Replace ("(Clone)", "");
 
 				networkManager.GetComponent<ClientScript> ().StartComponent (ipAddress, serverPort);
+
+				/*Paramos el juego*/
+				ballScript.RestartMatch();
+				ballScript.enabled = false;
 
 				flag = true;
 			}
@@ -60,4 +67,14 @@ public class GameManagerController : MonoBehaviour {
 
 
 	}
+
+	public void pararJuego(){
+		ballScript.RestartMatch();
+		ballScript.enabled = false;
+	}
+
+	public void comenzarJuego(){
+		ballScript.enabled = true;
+	}
+
 }

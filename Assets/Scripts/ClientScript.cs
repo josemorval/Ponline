@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
+using System;
 
 public class ClientScript : MonoBehaviour {
 
@@ -30,8 +31,11 @@ public class ClientScript : MonoBehaviour {
 	int connectionId;
 
 	GameObject ball;
+	BallController ballScript;
 	GameObject playerone;
 	GameObject playertwo;
+	PlayerController playeroneScript;
+	PlayerController playertwoScript;
 
 
 	bool isFirstPlayer;
@@ -40,9 +44,17 @@ public class ClientScript : MonoBehaviour {
 	byte[] buffer = new byte[100];
 	int bufferLength;
 	int channelId;
+	int counter;
 
 	NetworkEventType recData;
+	Vector3 posicion;
 
+	bool ballActiveFlag;
+	bool playeroneActiveFlag;
+	bool playertwoActiveFlag;
+
+	int receivedSize;
+	int connectionIdOut;
 	#endregion
 
 	// Custom initialization (has to be called in GameManager!!)
@@ -63,16 +75,19 @@ public class ClientScript : MonoBehaviour {
 		 * supone que determinara que semilla para el random se usa y sus coordenadas de ball son absolutas (el segundo player se ajustara a ellas).
 
 		NOTA: Super inseguro esto, si los dos peers realizan el start a la vez y les llega la conexion a la vez, pensaran que son el second player y no funcionara bien.*/
-		connectionId = NetworkTransport.Connect(hostId, oponentIpAddress, oponentPort, 0, error);
+		connectionId = NetworkTransport.Connect(hostId, oponentIpAddress, oponentPort, 0, out error);
 
 		if (error == 0) {
 			connectionEstablished = true;
 			isSecondPlayer = true;
 			isFirstPlayer = false;
-		} else {
+			playeroneScript.modo = PlayerController.playerMode.Online;
+		}
+		else{
 			connectionEstablished = false;
 			isSecondPlayer = false;
 			isFirstPlayer = true;
+			playertwoScript.modo = PlayerController.playerMode.Online;
 		}
 
 		/*Inicializaciones varias*/
@@ -85,31 +100,50 @@ public class ClientScript : MonoBehaviour {
 		ball = GameObject.Find ("Ball");
 		playerone = GameObject.Find ("Player1");
 		playertwo = GameObject.Find ("Player2");
+		ballScript = ball.GetComponent<BallController> ();
+		posicion = new Vector3 ();
+
+		ballActiveFlag = true;
+		playeroneActiveFlag = true;
+		playertwoActiveFlag = true;
 	}
 	
 	// Update is called once per frame
 	void Update () {
+		if (!ballScript.enabled) {
+			ballScript.enabled = true;
+		}
+		if (!playeroneScript.enabled) {
+			playeroneScript.enabled = true;
+		}
+		if (!playertwoScript.enabled) {
+			playertwoScript.enabled = true;
+		}
+
 		timePassed += Time.deltaTime;
 
 		if (!connectionEstablished) {//Conexion con el oponente
 			if (timePassed > waitTimeRetry) {
-				connectionId = NetworkTransport.Connect (hostId, this.oponentIpAddress, this.oponentPort, 0, error);
+				connectionId = NetworkTransport.Connect (hostId, this.oponentIpAddress, this.oponentPort, 0, out error);
 			
 				if (error == 0) {
 					connectionEstablished = true;
 					/*Envio de la semilla para el random con ID 0 de mensaje al oponente*/
-					buffer[0] = randomSeed;
-					NetworkTransport.Send (hostId, connectionId, reliableChannel, buffer, sizeof(int), error);
+					buffer = BitConverter.GetBytes(randomSeed);
+					NetworkTransport.Send (hostId, connectionId, reliableChannel, buffer, sizeof(int), out error);
 
-					//START MATCH [CODE MISSING]
+					//START MATCH
+					ballScript.enabled = true;
+					ballScript.RestartMatch();
 				}
 				timePassed -= waitTimeRetry;
 			}
 		} 
 		else { //Envio, recibo mensajes y actualizaciones
-
+			buffer = new byte[100];
 			/*Recibo de datos*/
-			recData = NetworkTransport.ReceiveFromHost(hostId, connectionId, channelId, buffer, 100, out, error);
+			recData = NetworkTransport.ReceiveFromHost(hostId, out connectionIdOut, out channelId, buffer, 100, out receivedSize, out error);
+
 			switch(recData){
 				case NetworkEventType.Nothing:
 					break;
@@ -117,25 +151,79 @@ public class ClientScript : MonoBehaviour {
 					break;
 				case NetworkEventType.DataEvent:
 				if(reliableChannel == channelId){ //Mensaje del randomseed
-					randomSeed = buffer[0];
-					//SET RANDOMSEED [CODE MISSING]
-					//START MATCH [CODE MISSING]
+					randomSeed = BitConverter.ToInt32(buffer, 0);
+					ballScript.seedRandom = randomSeed;
+					ballScript.updateSeed = true;
+					//START MATCH 
+					ballScript.enabled = true;
+					ballScript.RestartMatch();
 				}
 				else{
+					counter = sizeof(double);
+
 					if(isSecondPlayer){
-					//UPDATE BALL COORDINATES
-					//UPDATE PLAYER1 COORDINATES
-					//TELL BALL SCRIPT NOT TO PREDICT
+						posicion.Set(BitConverter.ToDouble(buffer, 0), BitConverter.ToDouble(buffer, counter), BitConverter.ToDouble(buffer, 2*counter));
+						ball.transform.position = posicion;
+
+						posicion.Set(BitConverter.ToDouble(buffer, 3*counter), BitConverter.ToDouble(buffer, 4*counter), BitConverter.ToDouble(buffer, 5*counter));
+						playerone.transform.position = posicion;
+					
+						//TELL BALL AND PLAYER ONE SCRIPT NOT TO DO ANYTHING
+						ballScript.enabled = false;
+						playeroneScript.enabled = false;
 					}
 					else{
-					//UPDATE PLAYER2 COORDINATES
-					//TELL BALL SCRIPT NOT TO PREDICT
+						posicion.Set(BitConverter.ToDouble(buffer, 0), BitConverter.ToDouble(buffer, counter), BitConverter.ToDouble(buffer, 2*counter));
+						playertwo.transform.position = posicion;
+
+						//TELL PLAYER TWO SCRIPT NOT TO DO ANYTHING
+						playertwoScript.enabled = false;
+
 					}
 				}
 					break;
 				case NetworkEventType.DisconnectEvent:
 					break;
 			}
+
+
+			/*Envio de datos*/
+			if(isFirstPlayer){
+				counter = 0;
+				buffer = new byte[100];
+				buffer = BitConverter.GetBytes(ball.transform.position.x);
+				counter += sizeof(double);
+				(buffer+counter) = BitConverter.GetBytes(ball.transform.position.y);
+				counter += sizeof(double);
+				(buffer+counter) = BitConverter.GetBytes(ball.transform.position.z);
+				counter += sizeof(double);
+
+				(buffer+counter) = BitConverter.GetBytes(playerone.transform.position.x);
+				counter += sizeof(double);
+				(buffer+counter) = BitConverter.GetBytes(playerone.transform.position.y);
+				counter += sizeof(double);
+				(buffer+counter) = BitConverter.GetBytes(playerone.transform.position.z);
+				counter += sizeof(double);
+
+				NetworkTransport.Send (hostId, connectionId, unreliableChannel, buffer, counter+1, error);
+			}
+			else{
+				counter = 0;
+				buffer = new byte[100];
+				(buffer+counter) = BitConverter.GetBytes(playertwo.transform.position.x);
+				counter += sizeof(double);
+				(buffer+counter) = BitConverter.GetBytes(playertwo.transform.position.y);
+				counter += sizeof(double);
+				(buffer+counter) = BitConverter.GetBytes(playertwo.transform.position.z);
+				counter += sizeof(double);
+				
+				NetworkTransport.Send (hostId, connectionId, unreliableChannel, buffer, counter+1, error);
+			}
+
 		}
 	}
 }
+
+
+
+

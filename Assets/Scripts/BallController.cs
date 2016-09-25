@@ -2,7 +2,7 @@
 using UnityEngine.Networking;
 using System.Collections;
 
-public class BallController : NetworkBehaviour {
+public class BallController : MonoBehaviour {
 
 
 	#region public variables
@@ -52,6 +52,8 @@ public class BallController : NetworkBehaviour {
 		scoreP1 = GameObject.Find ("p1").GetComponent<ScoreScript>();
 		scoreP2 = GameObject.Find ("p2").GetComponent<ScoreScript>();
 		netMan = GameObject.Find ("NetworkManager").GetComponent<NetworkManager>();
+		playerone = GameObject.Find ("Player1").GetComponent<PlayerController>();
+		playertwo = GameObject.Find ("Player2").GetComponent<PlayerController>();
 
 		/*---*/
 
@@ -60,85 +62,82 @@ public class BallController : NetworkBehaviour {
 
 	void Update () {
 
-		if (netMan.numPlayers == 2 || isClient) { /*Cambio por Networking*/
-			playerone = GameObject.Find ("Player1").GetComponent<PlayerController>();
-			playertwo = GameObject.Find ("Player2").GetComponent<PlayerController>();
 
-			vel = dir * 1f / (1f + factorVel * currentHeight * currentHeight);
+		vel = dir * 1f / (1f + factorVel * currentHeight * currentHeight);
 
-			Vector3 v = transform.position;
-			v = v + vel * Time.deltaTime;
+		Vector3 v = transform.position;
+		v = v + vel * Time.deltaTime;
 
-			Vector3 vLocal = transform.GetChild (0).localPosition;
-			vLocal.y = 0.55f - currentHeight * (v.x - maxDistance) * (v.x + maxDistance);
-			transform.GetChild (0).localPosition = vLocal;
+		Vector3 vLocal = transform.GetChild (0).localPosition;
+		vLocal.y = 0.55f - currentHeight * (v.x - maxDistance) * (v.x + maxDistance);
+		transform.GetChild (0).localPosition = vLocal;
 
+		transform.position = v;
+
+		if (v.y > 5.5f) {
+			v.y = 5.5f;
 			transform.position = v;
+			dir.y = -dir.y;
 
-			if (v.y > 5.5f) {
-				v.y = 5.5f;
+		} else if (v.y < -5.5f) {
+			v.y = -5.5f;
+			transform.position = v;
+			dir.y = -dir.y;
+
+		}
+
+		if (v.x > maxDistance) {
+
+			if (Mathf.Abs (transform.position.y - playertwo.transform.position.y) < 1.3f) {
+				v.x = maxDistance;
 				transform.position = v;
-				dir.y = -dir.y;
+				dir.x = -dir.x;
 
-			} else if (v.y < -5.5f) {
-				v.y = -5.5f;
-				transform.position = v;
-				dir.y = -dir.y;
+				if (playertwo.dirVel > 0f && dir.normalized.y < 0.5f) {
+					dir.y += 8f * playertwo.dirVel;
+				} else if (playertwo.dirVel < 0f && dir.normalized.y > -0.5f) {
+					dir.y += 8f * playertwo.dirVel;
+				} else {
+					dir.y += Random.Range (-1f, 1f);
+				}
 
+				currentHeight = initialHeight * randomDistributionHeight [Random.Range (0, randomDistributionHeight.Length)];
+				currentVel *= 1.01f;
+				currentVel = Mathf.Clamp (currentVel, 0f, maxVel);
+				dir = currentVel * dir.normalized;
+			} else {
+				scoreP1.AddScore (++scoreP1val);
+				RestartMatch ();
 			}
 
-			if (v.x > maxDistance) {
+		} else if (v.x < -maxDistance) {
+			
+			if (Mathf.Abs (transform.position.y - playerone.transform.position.y) < 1.3f) {
+				v.x = -maxDistance;
+				transform.position = v;
+				dir.x = -dir.x;
 
-				if (Mathf.Abs (transform.position.y - playertwo.transform.position.y) < 1.3f) {
-					v.x = maxDistance;
-					transform.position = v;
-					dir.x = -dir.x;
-
-					if (playertwo.dirVel > 0f && dir.normalized.y < 0.5f) {
-						dir.y += 8f * playertwo.dirVel;
-					} else if (playertwo.dirVel < 0f && dir.normalized.y > -0.5f) {
-						dir.y += 8f * playertwo.dirVel;
-					} else {
-						dir.y += Random.Range (-1f, 1f);
-					}
-
-					currentHeight = initialHeight * randomDistributionHeight [Random.Range (0, randomDistributionHeight.Length)];
-					currentVel *= 1.01f;
-					currentVel = Mathf.Clamp (currentVel, 0f, maxVel);
-					dir = currentVel * dir.normalized;
+				if (playerone.dirVel > 0f && dir.normalized.y < 0.5f) {
+					dir.y += 8f * playerone.dirVel;
+				} else if (playerone.dirVel < 0f && dir.normalized.y > -0.5f) {
+					dir.y += 8f * playerone.dirVel;
 				} else {
-					scoreP1.AddScore (++scoreP1val);
-					RestartMatch ();
+					dir.y += Random.Range (-1f, 1f);
 				}
 
-			} else if (v.x < -maxDistance) {
-				
-				if (Mathf.Abs (transform.position.y - playerone.transform.position.y) < 1.3f) {
-					v.x = -maxDistance;
-					transform.position = v;
-					dir.x = -dir.x;
+				currentHeight = initialHeight * randomDistributionHeight [Random.Range (0, randomDistributionHeight.Length)];
+				currentVel *= 1.01f;
+				currentVel = Mathf.Clamp (currentVel, 0f, maxVel);
+				dir = currentVel * dir.normalized;
 
-					if (playerone.dirVel > 0f && dir.normalized.y < 0.5f) {
-						dir.y += 8f * playerone.dirVel;
-					} else if (playerone.dirVel < 0f && dir.normalized.y > -0.5f) {
-						dir.y += 8f * playerone.dirVel;
-					} else {
-						dir.y += Random.Range (-1f, 1f);
-					}
-
-					currentHeight = initialHeight * randomDistributionHeight [Random.Range (0, randomDistributionHeight.Length)];
-					currentVel *= 1.01f;
-					currentVel = Mathf.Clamp (currentVel, 0f, maxVel);
-					dir = currentVel * dir.normalized;
-
-				} else {
-					scoreP2.AddScore (++scoreP2val);
-					RestartMatch ();
-				}
+			} else {
+				scoreP2.AddScore (++scoreP2val);
+				RestartMatch ();
+			}
 
 			}
 			
-		}
+
 	}
 
 	public void RestartMatch(){
