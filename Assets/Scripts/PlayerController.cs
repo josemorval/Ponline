@@ -78,12 +78,16 @@ public class PlayerController : MonoBehaviour {
 	void MovePlayerIA(){
 		if (ball.position.y > player.position.y) {
 			dirVel = 1f;
-		} else {
+		} else if (ball.position.y < player.position.y){
 			dirVel = -1f;
 		}
-		
+		else{
+			dirVel = 0f;
+		}
+
 		Vector3 v = player.position;
-		v = v + maxVel*dirVel*transform.up;
+		v = v + maxVel*dirVel*transform.up*(2*Mathf.Abs(player.position.y-ball.position.y)/(2*widthField));
+	
 		player.position = v;
 		
 		if(v.y<-widthField){

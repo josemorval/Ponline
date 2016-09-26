@@ -22,7 +22,6 @@ public class BallController : MonoBehaviour {
 		public ScoreScript scoreP1;
 		public ScoreScript scoreP2;
 		
-		public NetworkManager netMan;
 		[Header("Semilla para la generacion random de numeros")]
 		public int seedRandom;
 		public bool updateSeed;
@@ -51,7 +50,6 @@ public class BallController : MonoBehaviour {
 		/*Cambio por Networking*/
 		scoreP1 = GameObject.Find ("p1").GetComponent<ScoreScript>();
 		scoreP2 = GameObject.Find ("p2").GetComponent<ScoreScript>();
-		netMan = GameObject.Find ("NetworkManager").GetComponent<NetworkManager>();
 		playerone = GameObject.Find ("Player1").GetComponent<PlayerController>();
 		playertwo = GameObject.Find ("Player2").GetComponent<PlayerController>();
 

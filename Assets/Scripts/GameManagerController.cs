@@ -18,6 +18,7 @@ public class GameManagerController : MonoBehaviour {
 		[Header("Parámetros conexión")]
 		public string ipAddress;
 		public int serverPort;
+		public int myPort;
 
 		[Header("Controllers de los objetos")]
 		public BallController ballScript;
@@ -39,22 +40,23 @@ public class GameManagerController : MonoBehaviour {
 	void Start () {
 		flag = false;
 	}
-	
+
 	// Update is called once per frame
 	void Update () {
 		//Vemos si debemos instanciar algun network gameobject
 		if (!flag) {
 			if (Input.GetKey (clientKey)) {
+				flag = true;
 				networkManager = Instantiate (client);
 				networkManager.name = networkManager.name.Replace ("(Clone)", "");
 
-				networkManager.GetComponent<ClientScript> ().StartComponent (ipAddress, serverPort);
+				networkManager.GetComponent<ClientScript> ().StartComponent (ipAddress, serverPort, myPort);
 
 				/*Paramos el juego*/
 				ballScript.RestartMatch();
 				ballScript.enabled = false;
 
-				flag = true;
+
 			}
 		}
 
