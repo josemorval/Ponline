@@ -62,10 +62,12 @@ public class ClientScript : MonoBehaviour {
 	float waitTimePackage;
 	bool matchPaused;
 
+	bool isHost;
+
 	#endregion
 
 	// Custom initialization (has to be called in GameManager!!)
-	public void StartComponent (string oponentIpAddress, int oponentPort, int myPort) {
+	public void StartComponent (string oponentIpAddress, int oponentPort, int myPort, bool isHost) {
 		/*Iniciamos la capa de transporte*/
 		NetworkTransport.Init();
 
@@ -106,19 +108,17 @@ public class ClientScript : MonoBehaviour {
 
 		waitTimePackage = 1 / tickRate;
 
-		if (error == 0) {
-			connectionEstablished = true;
-			isSecondPlayer = true;
-			isFirstPlayer = false;
-			playeroneScript.modo = PlayerController.playerMode.Online;
-			playertwoScript.modo = PlayerController.playerMode.Local;
+		if (isHost) {
+			isFirstPlayer = true;
+			isSecondPlayer = false;
+			playeroneScript.modo = PlayerController.playerMode.Local;
+			playertwoScript.modo = PlayerController.playerMode.Online;
 		}
 		else{
-			connectionEstablished = false;
-			isSecondPlayer = false;
-			isFirstPlayer = true;
-			playertwoScript.modo = PlayerController.playerMode.Online;
-			playeroneScript.modo = PlayerController.playerMode.Local;
+			isFirstPlayer = false;
+			isSecondPlayer = true;
+			playeroneScript.modo = PlayerController.playerMode.Online;
+			playertwoScript.modo = PlayerController.playerMode.Local;
 		}
 
 	}
@@ -138,22 +138,24 @@ public class ClientScript : MonoBehaviour {
 		timePassed += Time.deltaTime;
 
 		if (!connectionEstablished) {//Conexion con el oponente
-			if (timePassed > waitTimeRetry) {
-				connectionId = NetworkTransport.Connect (hostId, this.oponentIpAddress, this.oponentPort, 0, out error);
-			
-				if (error == 0) {
-					connectionEstablished = true;
+			if (isConnected ()) {
+				connectionEstablished = true;
+				if (isFirstPlayer) {
 					/*Envio de la semilla para el random con ID 0 de mensaje al oponente*/
 					Array.Copy (BitConverter.GetBytes (randomSeed), buffer, sizeof(int));
 					NetworkTransport.Send (hostId, connectionId, reliableChannel, buffer, sizeof(int), out error);
 
 					//START MATCH
 					ballScript.enabled = true;
-					ballScript.RestartMatch();
+					ballScript.RestartMatch ();
 					matchPaused = false;
 				}
-				timePassed -= waitTimeRetry;
+			} else if (timePassed > waitTimeRetry) {
+					connectionId = NetworkTransport.Connect (hostId, this.oponentIpAddress, this.oponentPort, 0, out error);
+					timePassed -= waitTimeRetry;
 			}
+
+
 		} 
 		else { //Envio, recibo mensajes y actualizaciones
 			buffer = new byte[100];
@@ -229,9 +231,24 @@ public class ClientScript : MonoBehaviour {
 					Array.Copy (BitConverter.GetBytes (playertwo.transform.position.z), 0, buffer, 2 * counter, sizeof(float));
 					
 					NetworkTransport.Send (hostId, connectionId, unreliableChannel, buffer, counter + 1, out error);
+			
 				}
 			}
 		}
+	}
+
+
+	bool isConnected(){
+		NetworkEventType rec;
+		bool res = false;
+
+		rec = NetworkTransport.ReceiveFromHost(hostId, out connectionIdOut, out channelId, buffer, 100, out receivedSize, out error);
+
+		if (recData == NetworkEventType.ConnectEvent) {
+			res = true;	
+		}
+
+		return res;
 	}
 }
 

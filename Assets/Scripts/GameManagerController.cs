@@ -45,12 +45,18 @@ public class GameManagerController : MonoBehaviour {
 	void Update () {
 		//Vemos si debemos instanciar algun network gameobject
 		if (!flag) {
-			if (Input.GetKey (clientKey)) {
+			if (Input.GetKey (clientKey) || Input.GetKey(serverKey)) {
 				flag = true;
 				networkManager = Instantiate (client);
 				networkManager.name = networkManager.name.Replace ("(Clone)", "");
 
-				networkManager.GetComponent<ClientScript> ().StartComponent (ipAddress, serverPort, myPort);
+				if (Input.GetKey (serverKey)) {
+					networkManager.GetComponent<ClientScript> ().StartComponent (ipAddress, serverPort, myPort, true);
+				} else {
+					networkManager.GetComponent<ClientScript> ().StartComponent (ipAddress, serverPort, myPort, false);
+				}
+
+
 
 				/*Paramos el juego*/
 				ballScript.RestartMatch();
