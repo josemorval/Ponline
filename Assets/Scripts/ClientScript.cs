@@ -213,20 +213,20 @@ public class ClientScript : MonoBehaviour {
 				if (isFirstPlayer) {
 					counter = sizeof(float);
 					buffer = new byte[100];
-					Array.Copy (BitConverter.GetBytes (ball.transform.position.x), buffer, 0 * counter);
-					Array.Copy (BitConverter.GetBytes (ball.transform.position.y), buffer, 1 * counter);
-					Array.Copy (BitConverter.GetBytes (ball.transform.position.z), buffer, 2 * counter);
-					Array.Copy (BitConverter.GetBytes (playerone.transform.position.x), buffer, 3 * counter);
-					Array.Copy (BitConverter.GetBytes (playerone.transform.position.y), buffer, 4 * counter);
-					Array.Copy (BitConverter.GetBytes (playerone.transform.position.z), buffer, 5 * counter);
+					Array.Copy (BitConverter.GetBytes (ball.transform.position.x), 0, buffer, 0 * counter, sizeof(float));
+					Array.Copy (BitConverter.GetBytes (ball.transform.position.y), 0,  buffer, 1 * counter, sizeof(float));
+					Array.Copy (BitConverter.GetBytes (ball.transform.position.z), 0, buffer, 2 * counter, sizeof(float));
+					Array.Copy (BitConverter.GetBytes (playerone.transform.position.x), 0, buffer, 3 * counter, sizeof(float));
+					Array.Copy (BitConverter.GetBytes (playerone.transform.position.y), 0, buffer, 4 * counter, sizeof(float));
+					Array.Copy (BitConverter.GetBytes (playerone.transform.position.z), 0, buffer, 5 * counter, sizeof(float));
 
 					NetworkTransport.Send (hostId, connectionId, unreliableChannel, buffer, counter + 1, out error);
 				} else {
 					counter = sizeof(float);
 					buffer = new byte[100];
-					Array.Copy (BitConverter.GetBytes (playerone.transform.position.x), buffer, 0 * counter);
-					Array.Copy (BitConverter.GetBytes (playerone.transform.position.y), buffer, 1 * counter);
-					Array.Copy (BitConverter.GetBytes (playerone.transform.position.z), buffer, 2 * counter);
+					Array.Copy (BitConverter.GetBytes (playertwo.transform.position.x), 0, buffer, 0 * counter, sizeof(float));
+					Array.Copy (BitConverter.GetBytes (playertwo.transform.position.y), 0, buffer, 1 * counter, sizeof(float));
+					Array.Copy (BitConverter.GetBytes (playertwo.transform.position.z), 0, buffer, 2 * counter, sizeof(float));
 					
 					NetworkTransport.Send (hostId, connectionId, unreliableChannel, buffer, counter + 1, out error);
 				}
